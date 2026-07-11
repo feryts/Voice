@@ -4,7 +4,7 @@ import { payouts } from "@/lib/data";
 
 export async function GET() {
   const session = getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
+  if (!session || !session.isSuperAdmin) {
     return NextResponse.json({ error: "Yetkiniz yok." }, { status: 403 });
   }
   return NextResponse.json({ payouts });
@@ -12,7 +12,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const session = getSession();
-  if (!session || session.role !== "SUPER_ADMIN") {
+  if (!session || !session.isSuperAdmin) {
     return NextResponse.json({ error: "Yetkiniz yok." }, { status: 403 });
   }
 
