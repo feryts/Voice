@@ -1,22 +1,42 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { agencies, getAgencyEarnings } from "@/lib/data";
+import { agencies, getAgencyEarnings, createAgency, closeAgency, reopenAgency } from "@/lib/data";
+
+function hasAgencyAccess(session: ReturnType<typeof getSession>) {
+  return !!session && (session.isSuperAdmin || session.permissions.includes("AGENCY_MANAGEMENT"));
+}
 
 export async function GET() {
   const session = getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Giriş gerekli." }, { status: 401 });
+  if (!hasAgencyAccess(session)) {
+    return NextResponse.json({ error: "Yetkiniz yok." }, { status: 403 });
   }
+  const report = agencies.map((a) => getAgencyEarnings(a.id));
+  return NextResponse.json({ report });
+}
 
-  if (session.role === "SUPER_ADMIN") {
-    const report = agencies.map((a) => getAgencyEarnings(a.id));
-    return NextResponse.json({ report, scope: "ALL" });
+export async function POST(req: NextRequest) {
+  const session = getSession();
+  if (!hasAgencyAccess(session)) {
+    return NextResponse.json({ error: "Yetkiniz yok." }, { status: 403 });
   }
-
-  if (session.role === "AGENCY_MANAGER" && session.agencyId) {
-    const report = [getAgencyEarnings(session.agencyId)];
-    return NextResponse.json({ report, scope: "OWN" });
+  const { name, commissionRate, hostQuota } = await req.json();
+  if (!name || typeof commissionRate !== "number" || typeof hostQuota !== "number") {
+    return NextResponse.json({ error: "Eksik bilgi." }, { status: 400 });
   }
+  const agency = createAgency(name, commissionRate, hostQuota);
+  return NextResponse.json({ ok: true, agency });
+}
 
-  return NextResponse.json({ error: "Yetkiniz yok." }, { status: 403 });
+export async function PATCH(req: NextRequest) {
+  const session = getSession();
+  if (!hasAgencyAccess(session)) {
+    return NextResponse.json({ error: "Yetkiniz yok." }, { status: 403 });
+  }
+  const { agencyId, action } = await req.json();
+  const agency = action === "close" ? closeAgency(agencyId) : action === "reopen" ? reopenAgency(agencyId) : null;
+  if (!agency) {
+    return NextResponse.json({ error: "İşlem başarısız." }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true, agency });
 }
