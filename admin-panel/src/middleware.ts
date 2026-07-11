@@ -9,6 +9,10 @@ const ROUTE_TO_NAVKEY: Record<string, NavKey> = {
   "/agencies": "agencies",
   "/users": "users",
   "/security": "security",
+  "/customer-service": "customer-service",
+  "/rooms": "rooms",
+  "/admin-management": "admin-management",
+  "/requests": "requests",
 };
 
 export function middleware(req: NextRequest) {
@@ -23,8 +27,7 @@ export function middleware(req: NextRequest) {
   }
 
   const navKey = ROUTE_TO_NAVKEY[pathname];
-  if (navKey && !canAccess(session.role, navKey)) {
-    // Yetkisi olmayan bir sayfaya gitmeye çalışıyor -> dashboard'a geri yolla
+  if (navKey && !canAccess(session, navKey)) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -32,5 +35,16 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/coins", "/payouts", "/agencies", "/users", "/security"],
+  matcher: [
+    "/dashboard",
+    "/coins",
+    "/payouts",
+    "/agencies",
+    "/users",
+    "/security",
+    "/customer-service",
+    "/rooms",
+    "/admin-management",
+    "/requests",
+  ],
 };
