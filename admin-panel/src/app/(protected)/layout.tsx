@@ -8,7 +8,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-console-bg">
-      <Sidebar role={session.role} />
+      <Sidebar session={session} />
       <div className="flex-1">{children}</div>
     </div>
   );
