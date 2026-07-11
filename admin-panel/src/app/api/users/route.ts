@@ -4,7 +4,7 @@ import { users } from "@/lib/data";
 
 export async function GET() {
   const session = getSession();
-  if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "MODERATOR")) {
+  if (!session || (!session.isSuperAdmin && !session.permissions.includes("BAN_IP"))) {
     return NextResponse.json({ error: "Yetkiniz yok." }, { status: 403 });
   }
   return NextResponse.json({ users });
