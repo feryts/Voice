@@ -1,0 +1,97 @@
+// ─────────────────────────────────────────────────────────────
+// Bu şema, admin panelindeki mock veriye (src/lib/data.ts) birebir
+// karşılık gelir. Admin paneli gerçek veriye bağlarken bu tabloları
+// kullanabilirsin.
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  AGENCY_MANAGER
+  MODERATOR
+}
+
+enum UserKind {
+  USER
+  HOST
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AdminAccount {
+  id           String   @id @default(cuid())
+  name         String
+  role         Role
+  passwordHash String
+  agencyId     String?
+  agency       Agency?  @relation(fields: [agencyId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Agency {
+  id             String        @id @default(cuid())
+  name           String
+  commissionRate Float // 0.20 = %20
+  hosts          AppUser[]
+  admins         AdminAccount[]
+  createdAt      DateTime      @default(now())
+}
+
+model AppUser {
+  id               String     @id @default(cuid())
+  username         String     @unique
+  phone            String     @unique
+  coinBalance      Int        @default(0)
+  kind             UserKind   @default(USER)
+  banned           Boolean    @default(false)
+  agencyId         String?
+  agency           Agency?    @relation(fields: [agencyId], references: [id])
+  totalEarningsUSD Float      @default(0)
+  loginLogs        LoginLog[]
+  payouts          Payout[]
+  createdAt        DateTime   @default(now())
+}
+
+model CoinPackage {
+  id       String @id @default(cuid())
+  coins    Int
+  priceUSD Float
+}
+
+model PayoutSetting {
+  id                    String @id @default(cuid())
+  payoutRatePer1000Coins Float @default(4.5)
+}
+
+model Payout {
+  id          String       @id @default(cuid())
+  hostId      String
+  host        AppUser      @relation(fields: [hostId], references: [id])
+  amountUSD   Float
+  status      PayoutStatus @default(PENDING)
+  requestedAt DateTime     @default(now())
+  decidedAt   DateTime?
+}
+
+model LoginLog {
+  id     String   @id @default(cuid())
+  userId String
+  user   AppUser  @relation(fields: [userId], references: [id])
+  ip     String
+  device String
+  at     DateTime @default(now())
+
+  @@index([ip])
+}
